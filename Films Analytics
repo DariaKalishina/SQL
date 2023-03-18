@@ -1,0 +1,114 @@
+1a. Count the number of records in the people table, aliasing the result as count_records.
+SELECT count(*) AS count_records
+FROM people
+
+1b. Count the number of languages and countries in the films data table. Use aliases count_languages and count_countries, respectively.
+SELECT count(distinct language) AS count_languages,
+count(distinct country) AS count_countries
+FROM films
+
+1c. Select the title of every film that doesn't have a budget associated with it and use the alias no_budget_info. Use the films data table. Limit the report to 10 rows. 
+SELECT title AS no_budget_info FROM films
+WHERE budget IS NULL limit 10
+
+2a. Generate a report that has film_id and facebook_likes with less than 1,000 likes from the reviews table. Limit the report to 10 rows.
+SELECT film_id, facebook_likes
+FROM reviews
+WHERE facebook_likes < 1000 limit 10
+
+2b. Count how many records have a num_votes of at least 100,000 from the reviews table; use the alias films_over_100K_votes.
+SELECT count(num_votes) AS films_over_100K_votes
+FROM reviews
+WHERE num_votes > 100000
+
+2c. Select and count the language column using the alias count_spanish from the films data table.
+Apply a filter to select only Spanish from the language field.
+SELECT count(language) AS count_spanish
+FROM films
+WHERE language='Spanish'
+
+3. Create a report that meets the following requirements.
+
+a. Count the unique titles from the films data table and use the alias nineties_english_films_for_teens.
+b. Filter to include only movies with a release_year from 1990 to 1999, inclusive.
+c. Add another filter narrowing your query down to English-language films.
+d. Add a final filter to select only films with 'G', 'PG', 'PG-13' certifications.
+
+SELECT count(DISTINCT title) AS nineties_english_films_for_teens
+FROM films
+WHERE (release_year BETWEEN 1990 AND 1999)
+AND language = 'English'
+AND (certification = 'G' OR certification = 'PG' OR certification = 'PG-13')
+
+4a. Calculate the average amount grossed by all films whose titles start with the letter 'A' and alias with avg_gross_A. Round the average to zero decimal places.
+SELECT AVG(gross) AS avg_gross_A
+FROM films 
+WHERE title LIKE 'A%'
+
+4b. Select the lowest gross film in 2016 and use the alias lowest_gross. The report should contain the title of the film.
+SELECT title, MIN(gross) AS lowest_gross
+FROM films
+WHERE release_year = 2016
+
+5a. Select the title and duration from every film, from longest duration to shortest. Use the films data table. Limit the report to 10 rows.
+SELECT title, durations
+FROM films 
+ORDER BY durations DESC limit 10
+
+5b. The ORDER BY can be used to sort multiple columns.  It will sort by the first column specified, then sort by the next, and so on. Columns on the ORDER BY function should be separated by commas with no comma after the last column.
+SELECT title, release_year, durations
+FROM films
+WHERE release_year IS NOT NULL
+ORDER BY release_year, durations DESC limit 10
+
+6a.Select the release_year and count of films released in each year aliased as film_count. Do not include records where release_year is missing. Use the films data table.Limit the report to 10 rows. You can run the code chunk below to see what the first 10 rows should look like.
+SELECT release_year, count(*) AS film_count
+FROM films
+WHERE release_year IS NOT NULL
+GROUP BY release_year limit 10
+
+6b. GROUP BY becomes more useful when it is used on multiple columns or in conjunction with ORDER BY. 
+You apply GROUP BY to multiple columns in the same manner you do ORDER BY (multiple columns separated by commas with no comma after the last column).
+
+You want to understand budget changes throughout the years in individual countries.
+
+Select the release_year, country, and the maximum budget aliased as max_budget for each year and each country. Sort the report by release_year and country. 
+You do not want the report to include missing values for release_year or budget. Limit the report to 10 rows.
+
+SELECT release_year, country, MAX(budget) AS max_budget
+FROM films
+WHERE release_year IS NOT NULL AND budget IS NOT NULL
+GROUP BY release_year, country
+ORDER BY release_year, country limit 10
+
+7. Combining filtering and sorting provides you greater interpretability by ordering reports. You are interested in what countries have the highest average film budgets.
+
+Create a report that meets the following requirements.
+a. Select the country and the average budget as average_budget, from the films table.
+b. Group the results by country.
+c. Filter the results to countries with an average budget of more than one billion (1000000000).
+d. Sort by descending order of the average_budget.
+
+SELECT country,  AVG(budget) AS avg_budget
+FROM films
+GROUP BY country
+HAVING AVG(budget) > 1000000000
+ORDER BY AVG(budget) DESC
+
+8. Generate a report that that returns the average budget and gross earnings for films each year after 1990 if the average gross budget is greater than 60 million.
+SELECT country, release_year,  AVG(budget) AS avg_budget, AVG(gross) AS avg_gross
+FROM films
+WHERE release_year > 1990
+GROUP BY release_year
+HAVING AVG(gross) > 60000000
+ORDER BY AVG(budget) DESC
+
+
+
+
+
+
+
+
+
+
