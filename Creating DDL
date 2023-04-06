@@ -1,0 +1,198 @@
+--     Description
+----------------------------------------------------------------------------------------------------
+x
+ 
+ 
+----------------------------------------------------------------------------------------------------
+--     Sections
+----------------------------------------------------------------------------------------------------
+ 
+0.     Setup (e.g. Configuration, Dimensions, Reference, Variables, etc.)
+ 
+1.     Create
+2.     Update
+3.     Read
+4.     Delete
+5.     s
+6.     x
+7.     x
+8.     x
+9.     Cleanup
+ 
+----------------------------------------------------------------------------------------------------
+--     Notes
+----------------------------------------------------------------------------------------------------
+ 
+ 
+ 
+ 
+**************************************************************************************************** */
+ 
+use    warehouse     small_wh;
+use    database      edw;
+use    schema               transaction;
+ 
+----------------------------------------------------------------------------------------------------
+--     0.     Setup (e.g. Configuration, Dimensions, Reference, Variables, etc.)
+----------------------------------------------------------------------------------------------------
+ 
+set           client_number        = '0620';
+set           date_begin                  = to_date('2022-09-01');
+set     date_end                   = last_day($date_begin);
+--set    date_end    = to_date('2022-12-31');
+--set    date_end    = last_day(dateadd(month, -1,(to_date(current_date()))));
+ 
+set    account_number              = '1234567890123456';
+set    settlement_amount    = 16.06;
+set    settlement_date      = '2022-09-01';
+ 
+ 
+--    List of dimension tables in database = EDW and schema in ('DEMOGRAPHICS', 'REFERENCE', 'TRANSACTION')
+select  *
+from    information_schema.tables t
+where   lower(t.table_name) like 'dim%'
+    and t.table_schema in ('DEMOGRAPHICS', 'REFERENCE', 'TRANSACTION')
+order by t.table_schema,
+        t.table_name;
+ 
+select  get_ddl('table', 'DIM_MERCHANT_TYPE');
+ 
+--    DDL for table = DIM_MERCHANT_TYPE
+ 
+create or replace TABLE DIM_MERCHANT_TYPE
+(
+       MERCHANT_TYPE_KEY VARCHAR(16777216) NOT NULL,
+       MERCHANT_TYPE VARCHAR(250),
+       MERCHANT_GROUP VARCHAR(250),
+       MERCHANT_CATEGORY_CODE_NAME VARCHAR(250),
+       MERCHANT_CATEGORY_GROUP VARCHAR(250),
+       TRANSACTION_TYPE VARCHAR(250),
+       LOAD_DATE DATE,
+       CREATE_DATE TIMESTAMP_NTZ(7) NOT NULL,
+       HASH_KEY VARCHAR(250),
+       SOURCE_ID VARCHAR(255),
+       BATCH_ID VARCHAR(250),
+       LOAD_TYPE VARCHAR(50),
+       CREATED_USER VARCHAR(250),
+       UPDATED_USER VARCHAR(250),
+       UPDATE_DATE TIMESTAMP_NTZ(9),
+       HASH_DIFF_KEY VARCHAR(16777216)
+);
+ 
+--      Profile the following attributes (aka Data Element, column, etc.)
+        --    merchant_type, merchant_group,  merchant_category_code_name
+select  mt.merchant_type                    as mcc,
+        mt.merchant_group,
+        mt.merchant_category_group,       
+        mt.merchant_category_code_name
+from    edw.transaction.dim_merchant_type mt
+order by mt.merchant_group,
+        mt.merchant_category_group,
+        mt.merchant_type;
+       
+ 
+----------------------------------------------------------------------------------------------------
+--     1.     Create
+----------------------------------------------------------------------------------------------------
+ 
+use    warehouse   demo_wh;
+use    database    analytics;
+use    schema      data_quality;
+ 
+create or replace table analytics.data_quality.DQA_Merchant_Type
+(
+       merchant_type                 string(4),
+    monetary                      number default 0,   
+    merchant_group                string(250),   
+       merchant_category_group       string(250),
+       merchant_category_code_name   string(250),
+    date_created                   date not null,
+    date_Updated                   date not null,
+    date_Remediated                date default null,
+    remediation_note              string(1000) default null,
+       dqa_id_hash_key               string(70)
+);
+ 
+insert into analytics.data_quality.dqa_merchant_type (DQA_ID, MERCHANT_TYPE, MERCHANT_GROUP, MERCHANT_CATEGORY_GROUP, MERCHANT_CATEGORY_CODE_NAME, date_created, date_updated)
+select  SHA2(mt.merchant_type)            as hash_key,
+        mt.merchant_type,                 --    this is the same as = MCC
+        mt.merchant_group,
+        mt.merchant_category_group,
+        mt.merchant_category_code_name,
+        current_date()                    as date_created,
+        current_date()                    as date_updated
+from    edw.transaction.dim_merchant_type mt
+where   (mt.merchant_group is null
+            or  lower(mt.merchant_group) in ('', ' ', 'unknown')
+        )
+    or  (mt.merchant_category_group is null
+            or  lower(mt.merchant_category_group) in ('', ' ', 'unknown')
+        )
+    or  (mt.merchant_category_code_name is null
+            or  lower(mt.merchant_category_code_name) in ('', ' ', 'unknown')
+        );
+ 
+----------------------------------------------------------------------------------------------------
+--     2.     Read
+----------------------------------------------------------------------------------------------------
+ 
+select  mt.*
+from    analytics.data_quality.dqa_merchant_type mt
+where   mt.date_remediated is null;
+ 
+update  analytics.data_quality.dqa_merchant_type mt
+set     mt.date_remediated = current_date(),
+        mt.remediation_note = 'Mechant_Type value is invalid'
+where   mt.merchant_type like '%"%';
+ 
+----------------------------------------------------------------------------------------------------
+--     3.     Update
+----------------------------------------------------------------------------------------------------
+ 
+insert into analytics.data_quality.dqa_merchant_type (DQA_ID, MERCHANT_TYPE, MERCHANT_GROUP, MERCHANT_CATEGORY_GROUP, MERCHANT_CATEGORY_CODE_NAME, date_created, date_updated)
+select  SHA2(mt.merchant_type)            as hash_key,
+        mt.merchant_type,                 --    this is the same as = MCC
+        mt.merchant_group,
+        mt.merchant_category_group,
+        mt.merchant_category_code_name,
+        current_date()                    as date_created,
+        current_date()                    as date_updated
+from    edw.transaction.dim_merchant_type mt
+where   (mt.merchant_group is null or  lower(mt.merchant_group) in ('', ' ', 'unknown'))
+    or  (mt.merchant_category_group is null or  lower(mt.merchant_category_group) in ('', ' ', 'unknown'))
+    or  (mt.merchant_category_code_name is null or  lower(mt.merchant_category_code_name) in ('', ' ', 'unknown'));
+ 
+----------------------------------------------------------------------------------------------------
+--     4.     Delete
+----------------------------------------------------------------------------------------------------
+ 
+drop table if exists analytics.data_quality.DQA_Merchant_Type;
+ 
+----------------------------------------------------------------------------------------------------
+--     5.     x
+----------------------------------------------------------------------------------------------------
+ 
+ 
+ 
+----------------------------------------------------------------------------------------------------
+--     6.     x
+----------------------------------------------------------------------------------------------------
+ 
+ 
+ 
+----------------------------------------------------------------------------------------------------
+--     7.     x
+----------------------------------------------------------------------------------------------------
+ 
+ 
+ 
+----------------------------------------------------------------------------------------------------
+--     8.     x
+----------------------------------------------------------------------------------------------------
+ 
+ 
+ 
+ 
+----------------------------------------------------------------------------------------------------
+--     9.     Cleanup
+----------------------------------------------------------------------------------------------------
