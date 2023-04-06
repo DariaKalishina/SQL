@@ -1,0 +1,78 @@
+update  DQA_Merchant_Type mt
+set     mt.Has_Monetary = 1
+where exists    (    select  1
+                     from    dqa_merchant_type mt
+                         join edw.transaction.dim_merchant_type dmt on mt.merchant_type = dmt.merchant_type
+                         join edw.transaction.fact_transaction t on dmt.merchant_type_key = t.merchant_type_key
+                     where   t.settlement_date_key > '2022-09-01'  
+                         and t.monetary = 1
+                         and t.authorization_ind = 0
+                );
+ 
+--    1.    Blank
+update  DQA_Merchant_Type mt
+set     mt.Has_Blank_Value = 1
+where exists    (    select  1
+                     from    edw.transaction.dim_merchant_type dmt
+                     where   mt.merchant_type = dmt.merchant_type
+                         and (     dmt.merchant_type = ''
+                             or    dmt.merchant_group = ''
+                             or    dmt.merchant_category_code_name = ''
+                             or    dmt.merchant_category_group = ''
+                             )
+                );
+ 
+select  mt.*
+from    DQA_Merchant_Type mt
+where   mt.Has_Blank_Value = 1;
+ 
+select * from edw.transaction.dim_merchant_type mt limit 10;
+ 
+--    2.    NULL
+update  DQA_Merchant_Type mt
+set     mt.Has_NULL_Value = 1
+where exists    (    select  1
+                     from    edw.transaction.dim_merchant_type dmt
+                     where   mt.merchant_type = dmt.merchant_type
+                         and (     dmt.merchant_type is null
+                             or    dmt.merchant_group is null
+                             or    dmt.merchant_category_code_name is null
+                             or    dmt.merchant_category_group is null
+                             )
+                );
+ 
+select  mt.*
+from    DQA_Merchant_Type mt
+where   mt.Has_NULL_Value = 1;
+ 
+--    3.    Space
+update  DQA_Merchant_Type mt
+set     mt.Has_Space_Value = 1
+where exists    (    select  1
+                     from    edw.transaction.dim_merchant_type dmt
+                     where   mt.merchant_type = dmt.merchant_type
+                         and (     dmt.merchant_type = ' '
+                             or    dmt.merchant_group = ' '
+                             or    dmt.merchant_category_code_name = ' '
+                             or    dmt.merchant_category_group = ' '
+                             )
+                );
+ 
+select  mt.*
+from    DQA_Merchant_Type mt
+where   mt.Has_Space_Value = 1;
+ 
+ 
+--    4.    Unknown
+update  DQA_Merchant_Type mt
+set     mt.Has_Unknown_Value = 1
+where exists    (    select  1
+                     from    edw.transaction.dim_merchant_type dmt
+                     where   mt.merchant_type = dmt.merchant_type
+                         and (     dmt.merchant_type = 'Unknown'
+                             or    dmt.merchant_group = 'Unknown'
+                             or    dmt.merchant_category_code_name = 'Unknown'
+                             or    dmt.merchant_category_group = 'Unknown'
+                             )
+                );
+ 
